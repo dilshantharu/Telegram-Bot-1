@@ -3,7 +3,9 @@ const axios = require('axios');
 
 // Replace with your Telegram bot token
 const token = process.env.BOT_TOKEN;
-const weatherApiKey = process.env.WEATHER_API_KEY
+const weatherApiKey = process.env.WEATHER_API_KEY ;
+const NEWS_API_KEY = process.env.NEWS_API_KEY ; 
+
 
 // Create a bot using polling
 const bot = new TelegramBot(token, { polling: true });
@@ -71,5 +73,104 @@ ${weatherEmoji} *Weather in ${weatherData.name}:*
         }
     }
 });
+
+
+
+// To store current news state per chat
+const newsData = {};
+
+// NewsAPI endpoint
+const getNewsUrl = (query) => `https://newsapi.org/v2/everything?q=${query}&apiKey=${NEWS_API_KEY}`;
+
+// Function to handle /news command
+async function newsHandler(msg) {
+    const chatId = msg.chat.id;
+    const messageText = msg.text.split(' ');
+
+    if (messageText.length < 2) {
+        bot.sendMessage(chatId, '❗ Please provide a news topic. Example: /news technology');
+        return;
+    }
+
+    const query = messageText.slice(1).join(' ');  // Get the topic from the user's message
+    const url = getNewsUrl(query);
+
+    try {
+        // Fetch news from NewsAPI
+        const response = await axios.get(url);
+        const articles = response.data.articles;
+
+        if (articles.length === 0) {
+            bot.sendMessage(chatId, `❌ No news found for: ${query}`);
+            return;
+        }
+
+        // Store articles and initialize index for chat
+        newsData[chatId] = { articles, index: 0 };
+
+        // Send the first article
+        sendNewsArticle(chatId, 0);
+    } catch (error) {
+        console.error('Error fetching news:', error);
+        bot.sendMessage(chatId, '❌ Failed to fetch news. Please try again later.');
+    }
+}
+
+// Function to send a specific news article
+function sendNewsArticle(chatId, index) {
+    const article = newsData[chatId].articles[index];
+    const buttons = [
+        [
+            { text: '⬅️ Previous', callback_data: 'previous' },
+            { text: 'Next ➡️', callback_data: 'next' }
+        ]
+    ];
+
+    const caption = `📰 *${article.title}*\n_${article.description}_\n[Read more](${article.url})`;
+    
+    // Send article image with caption
+    if (article.urlToImage) {
+        bot.sendPhoto(chatId, article.urlToImage, {
+            caption: caption,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: buttons
+            }
+        });
+    } else {
+        bot.sendMessage(chatId, caption, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: buttons
+            }
+        });
+    }
+}
+
+// Handle button presses for navigation
+bot.on('callback_query', (callbackQuery) => {
+    const chatId = callbackQuery.message.chat.id;
+    const action = callbackQuery.data;
+    let index = newsData[chatId].index;
+
+    if (action === 'next') {
+        index = (index + 1) % newsData[chatId].articles.length; // Loop to the start if at the end
+    } else if (action === 'previous') {
+        index = (index - 1 + newsData[chatId].articles.length) % newsData[chatId].articles.length; // Loop to the end if at the start
+    }
+
+    // Update the current index
+    newsData[chatId].index = index;
+
+    // Edit the message to show the new article
+    bot.deleteMessage(chatId, callbackQuery.message.message_id);
+    sendNewsArticle(chatId, index);
+});
+
+// Handle /news command
+bot.onText(/\/news/, newsHandler);
+
+
+
 
 console.log("Successfully Connected !");
