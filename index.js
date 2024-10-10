@@ -85,25 +85,102 @@ ${weatherEmoji} *Weather in ${weatherData.name}:*
     }
 });
 
+// Function to generate a random number
+function random(from, min = 0) {
+    return Math.floor(Math.random() * from) + min;
+}
 
+// Function to fetch a random quote
+async function getRandomQuote() {
+    const pageId = random(10);
+    const fileId = pageId * 50 + random(50, 1);
+    const file = (fileId < 10 ? "00" : fileId < 100 ? "0" : "") + fileId;
 
-// To store current news state per chat
-const newsData = {};
+    const url = `https://raw.githubusercontent.com/ravindu01manoj/Quotes-500k/master/page${pageId}/quotes-${file}-manoj.json`;
+
+    try {
+        const res = await axios.get(url);
+        const quotes = res.data.data;
+        return quotes[random(quotes.length)];
+    } catch (error) {
+        console.error("Error fetching quotes:", error);
+        throw new Error("Failed to fetch quotes");
+    }
+}
+
+// Handle /quote command
+bot.onText(/\/quote/, async (msg) => {
+    const chatId = msg.chat.id;
+
+    try {
+        const quote = await getRandomQuote();
+        const responseMessage = `📜 *Quote:* "${quote.quote}"\n\n👤 *Author:* ${quote.author}`;
+
+        const options = {
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: "Get New Quote", callback_data: 'new_quote' }
+                ]]
+            },
+            parse_mode: 'Markdown'
+        };
+
+        bot.sendMessage(chatId, responseMessage, options);
+    } catch (error) {
+        console.error("Error fetching quote:", error);
+        bot.sendMessage(chatId, "❌ Failed to fetch a quote. Please try again later.");
+    }
+});
+
+// Handling callback query for new quote
+bot.on('callback_query', async (query) => {
+    if (query.data === 'new_quote') {
+        const chatId = query.message.chat.id;
+
+        await bot.answerCallbackQuery(query.id); // Acknowledge the callback
+
+        try {
+            const quote = await getRandomQuote();
+            const responseMessage = `📜 *Quote:* "${quote.quote}"\n\n👤 *Author:* ${quote.author}`;
+
+            const options = {
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: "Get New Quote", callback_data: 'new_quote' }
+                    ]]
+                },
+                parse_mode: 'Markdown'
+            };
+
+            await bot.editMessageText(responseMessage, {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                reply_markup: options.reply_markup,
+                parse_mode: options.parse_mode
+            });
+        } catch (error) {
+            console.error("Error fetching new quote:", error);
+            bot.sendMessage(chatId, "❌ Failed to fetch a new quote. Please try again later.");
+        }
+    }
+});
 
 // NewsAPI endpoint
 const getNewsUrl = (query) => `https://newsapi.org/v2/everything?q=${query}&apiKey=${NEWS_API_KEY}`;
 
-// Function to handle /news command
-async function newsHandler(msg) {
-    const chatId = msg.chat.id;
-    const messageText = msg.text.split(' ');
+// To store current news state per chat
+const newsData = {};
 
-    if (messageText.length < 2) {
+// Handle /news command
+bot.onText(/\/news(.*)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const query = match[1].trim(); // Get the topic from the user's message
+
+    if (!query) {
         bot.sendMessage(chatId, '❗ Please provide a news topic. Example: /news technology');
         return;
     }
 
-    const query = messageText.slice(1).join(' ');  // Get the topic from the user's message
     const url = getNewsUrl(query);
 
     try {
@@ -125,7 +202,7 @@ async function newsHandler(msg) {
         console.error('Error fetching news:', error);
         bot.sendMessage(chatId, '❌ Failed to fetch news. Please try again later.');
     }
-}
+});
 
 // Function to send a specific news article
 function sendNewsArticle(chatId, index) {
@@ -138,7 +215,7 @@ function sendNewsArticle(chatId, index) {
     ];
 
     const caption = `📰 *${article.title}*\n_${article.description}_\n[Read more](${article.url})`;
-    
+
     // Send article image with caption
     if (article.urlToImage) {
         bot.sendPhoto(chatId, article.urlToImage, {
@@ -158,30 +235,29 @@ function sendNewsArticle(chatId, index) {
     }
 }
 
-// Handle button presses for navigation
+// Handle button presses for news navigation
 bot.on('callback_query', (callbackQuery) => {
     const chatId = callbackQuery.message.chat.id;
     const action = callbackQuery.data;
-    let index = newsData[chatId].index;
 
-    if (action === 'next') {
-        index = (index + 1) % newsData[chatId].articles.length; // Loop to the start if at the end
-    } else if (action === 'previous') {
-        index = (index - 1 + newsData[chatId].articles.length) % newsData[chatId].articles.length; // Loop to the end if at the start
+    // Check if the action is for news navigation
+    if (action === 'next' || action === 'previous') {
+        let index = newsData[chatId].index;
+
+        if (action === 'next') {
+            index = (index + 1) % newsData[chatId].articles.length; // Loop to the start if at the end
+        } else if (action === 'previous') {
+            index = (index - 1 + newsData[chatId].articles.length) % newsData[chatId].articles.length; // Loop to the end if at the start
+        }
+
+        // Update the current index
+        newsData[chatId].index = index;
+
+        // Edit the message to show the new article
+        bot.deleteMessage(chatId, callbackQuery.message.message_id);
+        sendNewsArticle(chatId, index);
     }
-
-    // Update the current index
-    newsData[chatId].index = index;
-
-    // Edit the message to show the new article
-    bot.deleteMessage(chatId, callbackQuery.message.message_id);
-    sendNewsArticle(chatId, index);
 });
 
-// Handle /news command
-bot.onText(/\/news/, newsHandler);
+console.log("Bot is running...");
 
-
-
-
-console.log("Successfully Connected !");
