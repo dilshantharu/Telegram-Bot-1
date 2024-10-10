@@ -1,14 +1,25 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 
-// Replace with your Telegram bot token
+// -------------------------------THARU------------------------------
+
 const token = process.env.BOT_TOKEN;
 const weatherApiKey = process.env.WEATHER_API_KEY ;
 const NEWS_API_KEY = process.env.NEWS_API_KEY ; 
-
+const project_url = 'https://healthy-complex-lead.glitch.me';
 
 // Create a bot using polling
 const bot = new TelegramBot(token, { polling: true });
+
+setInterval(async () => {
+    try {
+        await axios.get(project_url); // Replace with your Glitch URL
+        console.log('Pinged the app to keep it awake!');
+    } catch (error) {
+        console.error('Error pinging the app:', error);
+    }
+}, 300000); // Ping every 5 minutes
+
 
 // /start command response
 bot.onText(/\/start/, (msg) => {
