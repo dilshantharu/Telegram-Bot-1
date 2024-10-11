@@ -24,8 +24,47 @@ setInterval(async () => {
 // /start command response
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, 'Hello! I am your bot.');
+
+  const welcomeMessage = `
+🤖 *Welcome to Your Multifunctional Bot!*
+
+Hello! I am your personal assistant bot, here to help you with a variety of tasks like news updates, quotes, weather checks, and more.
+
+Feel free to explore using the buttons below!
+  `;
+
+  const options = {
+    caption: welcomeMessage,
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📢 Explore Channels", url: "https://t.me/yourchannel" }],
+        [{ text: "ℹ️ Help", callback_data: 'help' }, { text: "📄 About", callback_data: 'about' }],
+        [{ text: "🚀 Get Started", callback_data: 'get_started' }]
+      ]
+    }
+  };
+
+  // Replace '/path/to/image.png' with your actual image path or URL
+  const imagePath = 'https://iili.io/29ntynj.md.jpg';
+  
+  bot.sendPhoto(chatId, imagePath, options);
 });
+
+// Handling button callbacks
+bot.on('callback_query', (callbackQuery) => {
+  const chatId = callbackQuery.message.chat.id;
+  const action = callbackQuery.data;
+
+  if (action === 'help') {
+    bot.sendMessage(chatId, 'ℹ️ Here is how you can use the bot: ...');
+  } else if (action === 'about') {
+    bot.sendMessage(chatId, '🤖 This bot was created to help you with various tasks like fetching news, quotes, and more.');
+  } else if (action === 'get_started') {
+    bot.sendMessage(chatId, '🚀 Let’s get started! You can begin by trying out one of the features.');
+  }
+});
+
 
 bot.onText(/\/weather(.*)/, async (msg, match) => {
     const chatId = msg.chat.id;
@@ -259,5 +298,122 @@ bot.on('callback_query', (callbackQuery) => {
     }
 });
 
-console.log("Bot is running...");
 
+const ehiImagePath = 'https://iili.io/29ntynj.md.jpg'; // Update this with your image URL
+const channelMessageLink = 'https://t.me/your_channel_link'; // Update with your channel link
+
+// Command to handle /ehi
+
+bot.onText(/\/ehi/, (msg) => {
+
+    const chatId = msg.chat.id; // The chat where the command is issued
+
+
+
+    const caption = "🌟 Get your EHI config directly from our channel! 🌟\n\nClick below to explore available packages or get ehi."; // Updated caption
+
+
+
+    const options = {
+
+        reply_markup: {
+
+            inline_keyboard: [
+
+                [
+
+                    {
+
+                        text: "📦 Available Packages",
+
+                        callback_data: 'available_packages'
+
+                    },
+
+                    {
+
+                        text: "🔗 Get EHI",
+
+                        url: channelMessageLink // Link to your channel message
+
+                    }
+
+                ],
+
+                [
+
+                    {
+
+                        text: "📖 How to Use",
+
+                        callback_data: 'how_to_use' // This will trigger another message or popup
+
+                    }
+
+                ]
+
+            ]
+
+        }
+
+    };
+
+
+
+    // Send image with caption and buttons
+
+    bot.sendPhoto(chatId, ehiImagePath, { caption: caption, ...options })
+
+        .then(() => {
+
+            console.log('EHI information sent successfully!');
+
+        })
+
+        .catch((error) => {
+
+            console.error('Error sending EHI information:', error);
+
+            bot.sendMessage(chatId, `❌ Failed to send EHI information. Error: ${error.message}`);
+
+        });
+
+});
+
+
+
+// Handle button callbacks for available packages and how to use
+
+bot.on('callback_query', (query) => {
+
+    const chatId = query.message.chat.id;
+
+
+
+    if (query.data === 'available_packages') {
+
+        // Show an alert message for available packages
+
+        bot.answerCallbackQuery(query.id, {
+
+            text: '📦 Available Packages:\n1. Basic Package - $5\n2. Standard Package - $10\n3. Premium Package - $15\nVisit our channel for more details!',
+
+            show_alert: true // This makes it an alert-style popup
+
+        });
+
+    }
+
+
+
+    if (query.data === 'how_to_use') {
+
+        // Reply with the instructions on how to use the EHI file
+
+        bot.sendMessage(chatId, '📖 To use the EHI file:\n1. Download HTTP Injector.\n2. Import the EHI file.\n3. Start the connection.\nFor detailed steps, visit our channel!');
+
+    }
+
+});
+
+console.log("Bot is running...");
