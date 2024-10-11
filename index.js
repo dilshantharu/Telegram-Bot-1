@@ -4,6 +4,8 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const FormData = require('form-data');
+const fetch = require("node-fetch");
+const fs = require("fs");
 
 const token = process.env.BOT_TOKEN;
 const weatherApiKey = process.env.WEATHER_API_KEY ;
@@ -543,6 +545,8 @@ CONFIG FILES යනු අදාළ VPN අදාළ සෙටින්ග්ස
 
 });
 
+// -------------------------------Repeat Stickers------------------------------
+
 bot.on('message', (msg) => {
   // Check if the message contains a sticker
   if (msg.sticker) {
@@ -553,6 +557,7 @@ bot.on('message', (msg) => {
   }
 });
 
+// -------------------------------/stock Command------------------------------
 
 // Command to get stock data
 
@@ -650,112 +655,247 @@ bot.onText(/\/stock(?:\s+(.+))?/, async (msg, match) => {
 
 });
 
-// /imgbb command handler
+// -------------------------------IMG Commandd------------------------------
 
-bot.onText(/\/imgbb/, (msg) => {
+// Function to remove background from the image
 
-    const chatId = msg.chat.id;
+async function removeBg(imageURL) {
 
-    bot.sendMessage(chatId, "*📸 Please send the photo you'd like to upload to IMGBB.*", {parse_mode: "Markdown"});
+  const formData = new FormData();
 
-});
+  formData.append("size", "auto");
+
+  formData.append("image_url", imageURL);
 
 
 
-// Listen for photo messages
+  const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+
+    method: "POST",
+
+    headers: { "X-Api-Key": process.env.RMBG_API_KEY }, // Replace with your actual API key
+
+    body: formData,
+
+  });
+
+
+
+  if (response.ok) {
+
+    return await response.buffer(); // Return the image buffer
+
+  } else {
+
+    throw new Error(`${response.status}: ${response.statusText}`);
+
+  }
+
+}
+
+
+
+// Function to upload image to imgbb
+
+async function uploadToImgbb(imageURL) {
+
+  const formData = new FormData();
+
+  formData.append("image", imageURL);
+
+
+
+  const response = await fetch("https://api.imgbb.com/1/upload?key=" + process.env.IMGBB_API_KEY, {
+
+    method: "POST",
+
+    body: formData,
+
+  });
+
+
+
+  if (response.ok) {
+
+    const data = await response.json();
+
+    return data.data.url; // Return the image URL
+
+  } else {
+
+    throw new Error(`${response.status}: ${response.statusText}`);
+
+  }
+
+}
+
+
+
+// Listen for photos
+
+let latestPhotoFileId;
 
 bot.on('photo', async (msg) => {
 
-    const chatId = msg.chat.id;
+  const chatId = msg.chat.id;
 
-    const fileId = msg.photo[msg.photo.length - 1].file_id; // Get the highest resolution photo
+  const fileId = msg.photo[msg.photo.length - 1].file_id; // Get the highest resolution photo
 
-    const fileLink = await bot.getFileLink(fileId); // Get the file link
-
-
-
-    // Notify user about the upload
-
-    const loadingMessage = await bot.sendMessage(chatId, "*⬆️ Uploading image to IMGBB...*\n*Please wait...*", {
-
-        parse_mode: 'Markdown'
-
-    });
+  latestPhotoFileId = fileId; // Save file ID for later use
 
 
 
-    // Prepare form data for IMGBB
+  // Send service options with inline keyboard
 
-    const formData = new FormData();
+  const serviceKeyboard = {
 
-    formData.append('image', fileLink);
+    reply_markup: {
 
+      inline_keyboard: [
 
+        [
 
-    const options = {
+          { text: "Upload to imgbb", callback_data: "upload_imgbb" },
 
-        method: 'POST',
+          { text: "Remove Background", callback_data: "remove_bg" }
 
-        url: 'https://api.imgbb.com/1/upload',
+        ]
 
-        params: {
-
-            key: process.env.IMGBB_KEY, // Replace with your IMGBB API key
-
-        },
-
-        headers: {
-
-            ...formData.getHeaders(),
-
-        },
-
-        data: formData,
-
-    };
-
-
-
-    try {
-
-        const response = await axios.request(options);
-
-        const imageUrl = response.data.data.url;
-
-
-
-        // Delete the loading message
-
-        await bot.deleteMessage(chatId, loadingMessage.message_id);
-
-
-
-        // Send the uploaded image link to the user
-
-        bot.sendMessage(chatId, `<b>✅ Image uploaded successfully!</b>\n\n<b>🔗 Here is your image link: ${imageUrl}</b>`, {
-
-            parse_mode: 'HTML'
-
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        // Delete the loading message in case of error
-
-        await bot.deleteMessage(chatId, loadingMessage.message_id);
-
-        bot.sendMessage(chatId, "⚠️ *Failed to upload image.* Please try again later.", {
-
-            parse_mode: 'Markdown'
-
-        });
+      ]
 
     }
 
+  };
+
+
+
+  bot.sendMessage(chatId, "Choose a service from the following:", serviceKeyboard);
+
 });
 
+
+
+// Handle callback queries (button clicks)
+
+bot.on('callback_query', async (query) => {
+
+  const chatId = query.message.chat.id;
+
+
+
+  if (!latestPhotoFileId) {
+
+    bot.answerCallbackQuery(query.id, { text: "⚠️ No image found! Please send a photo first.", show_alert: true });
+
+    return;
+
+  }
+
+
+
+  // Get the link to the last photo sent by the user
+
+  const fileLink = await bot.getFileLink(latestPhotoFileId);
+
+
+
+  if (query.data === "upload_imgbb") {
+
+    bot.sendMessage(chatId, "*📤 Uploading to imgbb...*", {parse_mode: "Markdown"}).then(async (msg) => {
+
+      try {
+
+        const imgbbLink = await uploadToImgbb(fileLink);
+
+        bot.editMessageText(`*✅ Image uploaded!*\n🔗 Here is your image link: ${imgbbLink}`, {
+
+          chat_id: chatId,
+
+          message_id: msg.message_id,
+
+          parse_mode: "Markdown"
+
+        });
+
+      } catch (error) {
+
+        console.error('Error uploading to imgbb:', error.message);
+
+        bot.editMessageText('*⚠️ Failed to upload image to imgbb. Please try again later.*', {
+
+          chat_id: chatId,
+          parse_mode: "Markdown",
+          message_id: msg.message_id
+
+        });
+
+      }
+
+    });
+
+  } else if (query.data === "remove_bg") {
+
+    bot.sendMessage(chatId, "*📤 Uploading to Removebg...*", {parse_mode: "Markdown"}).then(async (msg) => {
+
+      try {
+
+        const rbgResultData = await removeBg(fileLink);
+
+        const outputFilePath = 'no-bg.png';
+
+        fs.writeFileSync(outputFilePath, rbgResultData); // Save the processed image
+
+
+
+        await bot.editMessageText('*🔄 Removing background...*', {
+
+          chat_id: chatId,
+          parse_mode: "Markdown",
+          message_id: msg.message_id
+
+        });
+
+
+
+        // Send the processed image back to the user as a document
+
+        await bot.sendDocument(chatId, outputFilePath, {
+
+          caption: '*✅ Background removed!*',
+
+          parse_mode: "Markdown"
+
+        });
+
+
+
+        // Optionally, delete the local file after sending
+
+        fs.unlinkSync(outputFilePath);
+
+      } catch (error) {
+
+        console.error('Error processing the image:', error.message);
+
+        bot.editMessageText('⚠️ Failed to remove the background. Please try again later.', {
+
+          chat_id: chatId,
+
+          message_id: msg.message_id
+
+        });
+
+      }
+
+    });
+
+  }
+
+
+
+  bot.answerCallbackQuery(query.id); // Acknowledge the callback query to remove the "loading" state of the button
+
+});
 
 
 
