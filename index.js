@@ -756,7 +756,7 @@ bot.on('photo', async (msg) => {
         [
 
           { text: "Upload to imgbb", callback_data: "upload_imgbb" },
-        ]
+        ],
 
         [
           { text: "Remove Background", callback_data: "remove_bg" }
@@ -809,7 +809,7 @@ bot.on('callback_query', async (query) => {
 
         const imgbbLink = await uploadToImgbb(fileLink);
 
-        bot.editMessageText(`*✅ Image uploaded!*\n🔗 Here is your image link: ${imgbbLink}`, {
+        bot.editMessageText(`*✅ Image uploaded!*\n\n🔗 Here is your image link: ${imgbbLink}`, {
 
           chat_id: chatId,
 
@@ -843,7 +843,7 @@ bot.on('callback_query', async (query) => {
 
         const rbgResultData = await removeBg(fileLink);
 
-        const outputFilePath = 'botfyx-rmbg.png';
+        const outputFilePath = 'rmbg.png';
 
         fs.writeFileSync(outputFilePath, rbgResultData); // Save the processed image
 
