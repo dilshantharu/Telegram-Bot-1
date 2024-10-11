@@ -756,7 +756,9 @@ bot.on('photo', async (msg) => {
         [
 
           { text: "Upload to imgbb", callback_data: "upload_imgbb" },
+        ]
 
+        [
           { text: "Remove Background", callback_data: "remove_bg" }
 
         ]
@@ -841,7 +843,7 @@ bot.on('callback_query', async (query) => {
 
         const rbgResultData = await removeBg(fileLink);
 
-        const outputFilePath = 'no-bg.png';
+        const outputFilePath = 'botfyx-rmbg.png';
 
         fs.writeFileSync(outputFilePath, rbgResultData); // Save the processed image
 
