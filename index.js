@@ -700,7 +700,7 @@ bot.on('photo', async (msg) => {
 
         params: {
 
-            key: '5565a0ddc78eb64dc17f6aca08f15572', // Replace with your IMGBB API key
+            key: process.env.IMGBB_KEY, // Replace with your IMGBB API key
 
         },
 
