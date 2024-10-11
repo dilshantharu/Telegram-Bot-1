@@ -3,11 +3,13 @@
 
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
+const FormData = require('form-data');
 
 const token = process.env.BOT_TOKEN;
 const weatherApiKey = process.env.WEATHER_API_KEY ;
 const NEWS_API_KEY = process.env.NEWS_API_KEY ; 
 const project_url = 'https://healthy-complex-lead.glitch.me';
+const WIT_AI_TOKEN = process.env.WIT_AI_API_KEY;
 
 // Create a bot using polling
 const bot = new TelegramBot(token, { polling: true });
@@ -546,7 +548,215 @@ bot.on('message', (msg) => {
   if (msg.sticker) {
     console.log(`Sticker ID: ${msg.sticker.file_id}`);
     bot.sendSticker(msg.chat.id, `${msg.sticker.file_id}`);
+  } else {
+    return ; 
   }
 });
+
+
+// Command to get stock data
+
+bot.onText(/\/stock(?:\s+(.+))?/, async (msg, match) => {
+
+  const chatId = msg.chat.id;
+
+  const stockSymbol = match[1]; // Get the stock symbol from user input
+
+
+
+  if (!stockSymbol) {
+
+    // If the user did not provide a stock symbol
+
+    bot.sendMessage(chatId, `🚨 *Oops!* It looks like you forgot to provide a stock symbol. Please try again using the format:\n\n✨ /stock <symbol>\n\n*Examples:*\n- /stock MSFT\n- /stock AAPL\n- /stock TSLA\n\nHappy trading! 📈`, {parse_mode:"Markdown"});
+
+    return;
+
+  }
+
+
+
+  const options = {
+
+    method: 'GET',
+
+    url: 'https://alpha-vantage.p.rapidapi.com/query',
+
+    params: {
+
+      function: 'TIME_SERIES_DAILY',
+
+      symbol: stockSymbol.toUpperCase(), // Use the stock symbol from user input
+
+      outputsize: 'compact',
+
+      datatype: 'json'
+
+    },
+
+    headers: {
+
+      'x-rapidapi-key': 'b6fa6e167emsh999865817f23a74p1eaf45jsnb17a89660952',
+
+      'x-rapidapi-host': 'alpha-vantage.p.rapidapi.com'
+
+    }
+
+  };
+
+
+
+  try {
+
+    const response = await axios.request(options);
+
+    const stockData = response.data;
+
+
+
+    // Check if the API returned stock data
+
+    const dailyData = stockData['Time Series (Daily)'];
+
+    if (!dailyData) {
+
+      bot.sendMessage(chatId, `❌ *Error:* Could not retrieve stock data for symbol *${stockSymbol.toUpperCase()}*. Please check the symbol and try again.`, {parse_mode:"Markdown"});
+
+      return;
+
+    }
+
+
+
+    const latestDate = Object.keys(dailyData)[0]; // Get the most recent date
+
+    const latestStockInfo = dailyData[latestDate]; // Get stock info for that date
+
+
+
+    const replyMessage = `📊 *Stock Information*\n\n🔍 *Symbol:* ${stockSymbol.toUpperCase()}\n📅 *Date:* ${latestDate}\n💵 *Open:* $${latestStockInfo['1. open']}\n🔼 *High:* $${latestStockInfo['2. high']}\n🔽 *Low:* $${latestStockInfo['3. low']}\n💰 *Close:* $${latestStockInfo['4. close']}`;
+
+
+
+    bot.sendMessage(chatId, replyMessage, { parse_mode: 'Markdown' });
+
+  } catch (error) {
+
+    console.error('Error fetching stock data:', error.response ? error.response.data : error.message);
+
+    bot.sendMessage(chatId, `⚠️ *Failed to fetch stock data.* Please try again later.`, {parse_mode: "Markdown"});
+
+  }
+
+});
+
+// /imgbb command handler
+
+bot.onText(/\/imgbb/, (msg) => {
+
+    const chatId = msg.chat.id;
+
+    bot.sendMessage(chatId, "*📸 Please send the photo you'd like to upload to IMGBB.*", {parse_mode: "Markdown"});
+
+});
+
+
+
+// Listen for photo messages
+
+bot.on('photo', async (msg) => {
+
+    const chatId = msg.chat.id;
+
+    const fileId = msg.photo[msg.photo.length - 1].file_id; // Get the highest resolution photo
+
+    const fileLink = await bot.getFileLink(fileId); // Get the file link
+
+
+
+    // Notify user about the upload
+
+    const loadingMessage = await bot.sendMessage(chatId, "*⬆️ Uploading image to IMGBB...*\n*Please wait...*", {
+
+        parse_mode: 'Markdown'
+
+    });
+
+
+
+    // Prepare form data for IMGBB
+
+    const formData = new FormData();
+
+    formData.append('image', fileLink);
+
+
+
+    const options = {
+
+        method: 'POST',
+
+        url: 'https://api.imgbb.com/1/upload',
+
+        params: {
+
+            key: '5565a0ddc78eb64dc17f6aca08f15572', // Replace with your IMGBB API key
+
+        },
+
+        headers: {
+
+            ...formData.getHeaders(),
+
+        },
+
+        data: formData,
+
+    };
+
+
+
+    try {
+
+        const response = await axios.request(options);
+
+        const imageUrl = response.data.data.url;
+
+
+
+        // Delete the loading message
+
+        await bot.deleteMessage(chatId, loadingMessage.message_id);
+
+
+
+        // Send the uploaded image link to the user
+
+        bot.sendMessage(chatId, `<b>✅ Image uploaded successfully!</b>\n\n<b>🔗 Here is your image link: ${imageUrl}</b>`, {
+
+            parse_mode: 'HTML'
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        // Delete the loading message in case of error
+
+        await bot.deleteMessage(chatId, loadingMessage.message_id);
+
+        bot.sendMessage(chatId, "⚠️ *Failed to upload image.* Please try again later.", {
+
+            parse_mode: 'Markdown'
+
+        });
+
+    }
+
+});
+
+
+
 
 console.log("Bot is running...");
