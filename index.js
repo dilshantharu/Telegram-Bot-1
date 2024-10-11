@@ -25,13 +25,10 @@ setInterval(async () => {
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
-  const welcomeMessage = `
-🤖 *Welcome to Your Multifunctional Bot!*
-
-Hello! I am your personal assistant bot, here to help you with a variety of tasks like news updates, quotes, weather checks, and more.
-
-Feel free to explore using the buttons below!
-  `;
+  const welcomeMessage = `*Welcome to BotfyX!* 🤖\n\n` +
+    `I’m here to help you with a variety of tasks and make your experience enjoyable and efficient.\n` +
+    `Whether you need assistance or want to stay updated, I’ve got you covered!\n\n` +
+    `\`Developed by: THARU\``;
 
   const options = {
     caption: welcomeMessage,
