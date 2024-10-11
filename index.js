@@ -1,7 +1,8 @@
+// -------------------------------THARU------------------------------
+
+
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
-
-// -------------------------------THARU------------------------------
 
 const token = process.env.BOT_TOKEN;
 const weatherApiKey = process.env.WEATHER_API_KEY ;
@@ -10,6 +11,9 @@ const project_url = 'https://healthy-complex-lead.glitch.me';
 
 // Create a bot using polling
 const bot = new TelegramBot(token, { polling: true });
+
+// -------------------------------Keep Running------------------------------
+
 
 setInterval(async () => {
     try {
@@ -20,19 +24,21 @@ setInterval(async () => {
     }
 }, 300000); // Ping every 5 minutes
 
+// -------------------------------/start Command------------------------------
+
 
 // /start command response
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
 
-  const welcomeMessage = `*Welcome to BotfyX!* 🤖\n\n` +
+  const welcomeMessage = `<b>Welcome to BotfyX! 🤖</b>\n\n` +
     `I’m here to help you with a variety of tasks and make your experience enjoyable and efficient.\n` +
     `Whether you need assistance or want to stay updated, I’ve got you covered!\n\n` +
-    `\`Developed by: THARU\``;
+    `🧑‍💻 ᴅᴇᴠᴇʟᴏᴘᴇᴅ ʙʏ : <a href="t.me/itstharu">ᴛʜᴀʀᴜ</a>\n\n` + `---`;
 
   const options = {
     caption: welcomeMessage,
-    parse_mode: 'Markdown',
+    parse_mode: 'HTML',
     reply_markup: {
       inline_keyboard: [
         [{ text: "📢 Explore Channels", url: "https://t.me/yourchannel" }],
@@ -56,11 +62,62 @@ bot.on('callback_query', (callbackQuery) => {
   if (action === 'help') {
     bot.sendMessage(chatId, 'ℹ️ Here is how you can use the bot: ...');
   } else if (action === 'about') {
-    bot.sendMessage(chatId, '🤖 This bot was created to help you with various tasks like fetching news, quotes, and more.');
-  } else if (action === 'get_started') {
+    const aboutMessage = `<b>About BotfyX</b> 🤖\n\n` +
+      `BotfyX is your intelligent assistant designed to enhance your experience and streamline your tasks. ` +
+      `Whether you need help with various tasks or just want to stay updated, BotfyX is here to assist you!\n\n` +
+      `<b>About Developer</b>\n` +
+      `Developed by THARU, with a passion for technology and a commitment to providing useful solutions, I'm dedicated to making your interactions seamless and enjoyable.`;
+
+    const options = {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "📢 Join Our Channel", url: "https://t.me/yourchannel" }],
+          [{ text: "🌐 Visit My Website", url: "https://yourwebsite.com" }],
+          [{ text: "📩 Contact Me", url: "https://t.me/yourusername" }]
+        ]
+      }
+    };
+    
+  bot.sendSticker(chatId, `CAACAgIAAxkBAAIB-2cInzJtjQmjoglMgpQ77nTisjJiAAJxUAACD2hJSC4xAs2a9HmUNgQ`)
+    .then(() => {
+    bot.sendMessage(chatId, aboutMessage, { parse_mode: 'HTML', reply_markup: options.reply_markup }); });
+} else if (action === 'get_started') {
     bot.sendMessage(chatId, '🚀 Let’s get started! You can begin by trying out one of the features.');
   }
 });
+
+// -------------------------------/about Command------------------------------
+
+
+bot.onText(/\/about/, (msg) => {
+  const chatId = msg.chat.id;
+
+  const aboutMessage = `<b>About BotfyX</b> 🤖\n\n` +
+    `BotfyX is your intelligent assistant designed to enhance your experience and streamline your tasks. ` +
+    `Whether you need help with various tasks or just want to stay updated, BotfyX is here to assist you!\n\n` +
+    `<b>About Developer</b>\n` +
+    `Developed by THARU, with a passion for technology and a commitment to providing useful solutions, I'm dedicated to making your interactions seamless and enjoyable.`;
+
+  const options = {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📢 Join Our Channel", url: "https://t.me/yourchannel" }],
+        [{ text: "🌐 Visit My Website", url: "https://yourwebsite.com" }],
+        [{ text: "📩 Contact Me", url: "https://t.me/yourusername" }]
+      ]
+    }
+  };
+
+  // Send the about message with buttons
+  bot.sendSticker(chatId,`CAACAgIAAxkBAAIB-2cInzJtjQmjoglMgpQ77nTisjJiAAJxUAACD2hJSC4xAs2a9HmUNgQ`)
+    .then(() => {
+    
+        return  bot.sendMessage(chatId, aboutMessage, { parse_mode: 'HTML', reply_markup: options.reply_markup }); 
+    
+    }) ;
+});
+
+// -------------------------------/weather Command------------------------------
 
 
 bot.onText(/\/weather(.*)/, async (msg, match) => {
@@ -120,6 +177,9 @@ ${weatherEmoji} *Weather in ${weatherData.name}:*
         }
     }
 });
+
+// -------------------------------/quote Command------------------------------
+
 
 // Function to generate a random number
 function random(from, min = 0) {
@@ -200,6 +260,9 @@ bot.on('callback_query', async (query) => {
         }
     }
 });
+
+// -------------------------------/news Command------------------------------
+
 
 // NewsAPI endpoint
 const getNewsUrl = (query) => `https://newsapi.org/v2/everything?q=${query}&apiKey=${NEWS_API_KEY}`;
@@ -295,6 +358,8 @@ bot.on('callback_query', (callbackQuery) => {
     }
 });
 
+// -------------------------------/ehi Command------------------------------
+
 
 const ehiImagePath = 'https://iili.io/29ntynj.md.jpg'; // Update this with your image URL
 const channelMessageLink = 'https://t.me/your_channel_link'; // Update with your channel link
@@ -307,7 +372,9 @@ bot.onText(/\/ehi/, (msg) => {
 
 
 
-    const caption = "🌟 Get your EHI config directly from our channel! 🌟\n\nClick below to explore available packages or get ehi."; // Updated caption
+    const caption = `🌟 <b>Get your EHI config directly from our channel!</b> 🌟\n\n` +
+    `<b>EHI</b> කියන්නේ <b>free internet</b> access කරන්න පුළුවන් config file එකක්. ඔබට මේ file එක HTTP Injector app එකේ upload කරල, VPN configurations නිවැරදිව adjust කරලා, free internet එකක් භාවිතා කළ හැකියි.\n\n` +
+    `Click below to explore available packages or get more info on <b>EHI</b>.`; // Updated caption
 
 
 
@@ -317,7 +384,10 @@ bot.onText(/\/ehi/, (msg) => {
 
             inline_keyboard: [
 
-                [
+              [
+                { text: "🌐 Free Internet Info", callback_data: 'free_internet' }
+              ],  
+              [
 
                     {
 
@@ -359,7 +429,7 @@ bot.onText(/\/ehi/, (msg) => {
 
     // Send image with caption and buttons
 
-    bot.sendPhoto(chatId, ehiImagePath, { caption: caption, ...options })
+    bot.sendPhoto(chatId, ehiImagePath, { caption: caption, ...options, parse_mode: "HTML" })
 
         .then(() => {
 
@@ -393,7 +463,7 @@ bot.on('callback_query', (query) => {
 
         bot.answerCallbackQuery(query.id, {
 
-            text: '📦 Available Packages:\n1. Basic Package - $5\n2. Standard Package - $10\n3. Premium Package - $15\nVisit our channel for more details!',
+            text: `🍃 𝘈𝘝𝘈𝘐𝘓𝘈𝘉𝘓𝘌 𝘗𝘈𝘊𝘒𝘈𝘎𝘌𝘚🍃\n\n✯ ᴡʜᴀᴛsᴀᴘᴘ\n✯ ʏᴏᴜᴛᴜʙᴇ\n✯ ᴢᴏᴏᴍ\n✯ ғᴀᴄᴇʙᴏᴏᴋ & 𝙼𝙾𝚁𝙴\n\n𝙹𝙾𝙸𝙽 𝙾𝚄𝚁 𝙲𝙷𝙰𝙽𝙽𝙴𝙻 𝙵𝙾𝚁 𝙼𝙾𝚁𝙴 𝚄𝙿𝙳𝙰𝚃𝙴𝚂\n\n---`,
 
             show_alert: true // This makes it an alert-style popup
 
@@ -407,10 +477,76 @@ bot.on('callback_query', (query) => {
 
         // Reply with the instructions on how to use the EHI file
 
-        bot.sendMessage(chatId, '📖 To use the EHI file:\n1. Download HTTP Injector.\n2. Import the EHI file.\n3. Start the connection.\nFor detailed steps, visit our channel!');
+        bot.sendVideo(chatId, `https://cdn.glitch.global/f1a7f145-0df8-4c7b-a340-9fc6acc4d280/VN20241011_114552.mp4?v=1728628251149`, {
+          parse_mode:"HTML",
+          caption: `🌷 𝙰𝚗𝚍𝚛𝚘𝚒𝚍 𝙵𝚛𝚎𝚎 𝙸𝚗𝚝𝚎𝚛𝚗𝚎𝚝 𝚂𝚎𝚝𝚞𝚙 🌷
+
+✍️ දැනට තියෙන Package එකට අදාළ File එක අරගෙන, Video එකේ තියෙන විදිහට File Open කරගෙන Connect ( Start )  දුන්නට පස්සේ  Log එකේ Connected or VPN Connected කියල වැටෙනවද කියල බලන්න.එහෙම වැටෙනව නම් වැඩේ ගොඩ. 🥳🥳🥳 , Connect උනාට පස්සේ ඔයාල Data Use කරන හැම එකකටම Data Charge වෙන්නේ Normal Data වලින් නෙමෙයි ,ඔයාලගේ Package එකෙන්, Package එක Unlimited නම් Data ත් Unlimited තමයි 😁
+
+- Available Files : -
+
+• Http Injector ( EHI )
+• Stocks Http  ( SKS )
+• HTTP Custom ( HC )
+• Http Injector Lite ( EHIL )
+• TLS Tunnel  (TLS )`
+        });
 
     }
+  
+  if (query.data === 'free_internet') {
+    bot.sendMessage(chatId, `<b>💢 Free Internet කියන්නෙ මොකක්ද?</b>
+Free internet කියලා කිව්වට, internet free use කිරීමට ඔබ පකේජයක් activate කර තිබිය යුතුයි.
 
+<b>💢 එතකොට free internet කියන්නෙ මොකක්ද?</b>
+Free internet කියන්නේ ඔබ activate කරන පැකේජයෙන් අනිත් social media වැනි දේවල් භාවිතා කිරීමටයි.
+
+<b>💡 උදාහරණ:</b>
+Mobitel Rs 99 Social Package ය activate කර දුරකථනයේ ඩේටා විරහිතව YouTube, WhatsApp වැනි දෑ භාවිතා කිරීම.
+
+<b>🌐 Free Internet Use කරන්නෙ කොහොමද?</b>
+Free internet use කිරීමට ඔබට <b>VPN</b> එකක් භාවිතා කිරීමට සිදුවේ.
+
+<b>🔍 භාවිතා කිරීමට සුදුසු VPN මොනවද?</b>
+<b>📱 දුරකථන සඳහා (Android):</b>
+- HTTP Injector
+- HTTP Injector Lite
+- TLS Tunnel
+- HTTP Custom
+
+<b>💻 පරිඝණක සඳහා (Windows):</b>
+- SVL Injector
+- HTTP Proxy Injector
+- TCP Over SSL Tunnel
+
+<b>✅ මෙතනින් Recommend කළ හැක්කේ කුමන VPN Application ද?</b>
+- HTTP Injector
+- HTTP Injector Lite
+- SVL Injector
+- HTTP Proxy Injector
+
+<b>❓ මෙම VPN install කර විගසම ඔබට FREE DATA USE කළ හැකිද?</b>
+බැහැ, මොකද ඔබ මෙම VPN එකට අවශ්‍ය සෙටින්ග්ස් සකසා ගත යුතුයි.
+
+<b>🔧 කොහොමද එහෙම හදාගන්නෙ? මොනවද මේ CONFIG FILES කියන්නෙ?</b>
+CONFIG FILES යනු අදාළ VPN අදාළ සෙටින්ග්ස් ඇතුළත් FILES වේ.
+
+<b>🌟 උදාහරණ:</b>
+- HTTP Injector - EHI FILES
+- HTTP Injector Lite - EHIL FILES
+- SVL Injector - SVI FILES
+- HTTP Proxy Injector - HPI FILES
+`, {parse_mode: "HTML"});
+  }
+
+});
+
+bot.on('message', (msg) => {
+  // Check if the message contains a sticker
+  if (msg.sticker) {
+    console.log(`Sticker ID: ${msg.sticker.file_id}`);
+    bot.sendSticker(msg.chat.id, `${msg.sticker.file_id}`);
+  }
 });
 
 console.log("Bot is running...");
