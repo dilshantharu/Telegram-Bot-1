@@ -785,13 +785,13 @@ bot.on('callback_query', async (query) => {
 
 
 
-  if (!latestPhotoFileId) {
+  /*if (!latestPhotoFileId) {
 
     bot.answerCallbackQuery(query.id, { text: "⚠️ No image found! Please send a photo first.", show_alert: true });
 
     return;
 
-  }
+  }*/
 
 
 
@@ -899,6 +899,93 @@ bot.on('callback_query', async (query) => {
 
 });
 
+// -------------------------------/insta Command------------------------------
+ 
+bot.onText(/\/insta(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const instagramUrl = match[1];
+
+    // If the user did not provide a link
+    if (!instagramUrl) {
+        return bot.sendMessage(chatId, "⚠️ Please provide an Instagram link. Usage: */insta <link>*", {
+            parse_mode: "Markdown"
+        });
+    }
+
+    // Send a "Downloading..." message to indicate the download status
+    let statusMessageId;
+    try {
+        const statusMessage = await bot.sendMessage(chatId, "*⬇️ Downloading your Instagram media...*", {
+            parse_mode: "Markdown"
+        });
+        statusMessageId = statusMessage.message_id;
+    } catch (error) {
+        console.error("Error sending status message:", error);
+        return;
+    }
+
+    // Configure the API request to fetch the Instagram video
+    const options = {
+        method: 'GET',
+        url: 'https://instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com/get-info-rapidapi',
+        params: {
+            url: instagramUrl
+        },
+        headers: {
+            'x-rapidapi-key': 'b6fa6e167emsh999865817f23a74p1eaf45jsnb17a89660952',
+            'x-rapidapi-host': 'instagram-downloader-download-instagram-videos-stories1.p.rapidapi.com'
+        }
+    };
+
+    try {
+        // Fetch video data from the API
+        const response = await axios.request(options);
+        const videoUrl = response.data.download_url; // Adjust according to the API response structure
+        const type = response.data.type || "media"; // Default to "media" if type is not provided
+        const caption = `*✅ Here's your Instagram ${type}!*`; // Fallback custom caption
+
+        if (videoUrl) {
+            // Update the status message to indicate "Uploading..."
+            await bot.editMessageText(`*⬆️ Uploading your Instagram ${type}...*`, {
+                chat_id: chatId,
+                message_id: statusMessageId,
+                parse_mode: "Markdown"
+            });
+
+            // Send the video with the caption and an inline button
+            await bot.sendVideo(chatId, videoUrl, {
+                caption: caption,
+                parse_mode: "Markdown",
+                reply_markup: {
+                    inline_keyboard: [[
+                        {
+                            text: "Watch on Instagram",
+                            url: instagramUrl
+                        }
+                    ]]
+                }
+            });
+
+            // Delete the status message after sending the video
+            await bot.deleteMessage(chatId, statusMessageId);
+        } else {
+            // If no video is found, send a message indicating the issue
+            await bot.editMessageText("No video found for the provided link.", {
+                chat_id: chatId,
+                message_id: statusMessageId,
+                parse_mode: "Markdown"
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching data from Instagram API:', error.message);
+        // Update the status message to indicate a download failure
+        await bot.editMessageText("Failed to download video. Please check the provided link.", {
+            chat_id: chatId,
+            message_id: statusMessageId,
+            parse_mode: "Markdown"
+        });
+    }
+});
 
 
 console.log("Bot is running...");
