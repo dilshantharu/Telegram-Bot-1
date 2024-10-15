@@ -987,5 +987,202 @@ bot.onText(/\/insta(?:\s+(.+))?/, async (msg, match) => {
     }
 });
 
+// -------------------------------/song Command------------------------------
+
+let currentResultIndex = 0;
+let results = [];
+let currentQuery = '';
+
+// Function to extract song title and first artist's name
+function getSongInfo(song) {
+    const title = song.title;
+    const artistNames = song.artists.map(artist => artist.name);
+    const ArtistNames = artistNames.join(', ');
+    const firstArtistName = artistNames[0];
+    return { title, firstArtistName, ArtistNames };
+}
+
+// Function to get lyrics from API
+function getLyrics(trackName, artistName) {
+    return fetch(`https://api.lyrics.ovh/v1/${artistName}/${trackName}`)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('Error fetching lyrics');
+            }
+            return response.json();
+        })
+        .then((data) => {
+            if (data.lyrics) {
+                return data.lyrics;
+            } else {
+                throw new Error('Lyrics not found');
+            }
+        })
+        .catch((error) => {
+            console.error('Error fetching lyrics:', error);
+            return `Error fetching lyrics: ${error.message}`;
+        });
+}
+
+// Function to send or update song details
+async function updateSongDetails(chatId, messageId, resultIndex) {
+    if (results.length === 0 || !results[resultIndex]) {
+        return bot.sendMessage(chatId, "No more results available.");
+    }
+
+    const song = results[resultIndex];
+    const { title, views, duration, artists, thumbnails } = song;
+    const { ArtistNames } = getSongInfo(song);
+    const thumbnailUrl = thumbnails.length > 0 ? thumbnails[0].url : '';
+    const caption = `*Title:* ${title}\n*Views:* ${views}\n*Duration:* ${duration}\n*Artist:* ${ArtistNames}`;
+
+    await bot.editMessageMedia({
+        type: 'photo',
+        media: thumbnailUrl
+    }, {
+        chat_id: chatId,
+        message_id: messageId
+    });
+
+    await bot.editMessageCaption(caption, {
+        chat_id: chatId,
+        message_id: messageId,
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: "🎧 Listen Music", url: `https://www.youtube.com/watch?v=${song.videoId}` }],
+                [{ text: "📥 Download Song", callback_data: `download_song:${resultIndex}` }],
+                [{ text: "📄 Get Lyrics", callback_data: `get_lyrics:${resultIndex}` }],
+                [
+                    { text: "⏮️ Previous", callback_data: 'previous' },
+                    { text: "Next ⏭️", callback_data: 'next' }
+                ]
+            ]
+        }
+    });
+}
+
+// /song command handler
+bot.onText(/\/song(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const query = match[1];
+
+    if (!query) {
+        return bot.sendMessage(chatId, "⚠️ Please provide a song name. Usage: */song <query>*", { parse_mode: 'Markdown' });
+    }
+
+    currentQuery = query;
+
+    const options = {
+        method: 'GET',
+        url: 'https://youtube-music6.p.rapidapi.com/ytmusic/',
+        params: { query },
+        headers: {
+            'x-rapidapi-key': 'b6fa6e167emsh999865817f23a74p1eaf45jsnb17a89660952',
+            'x-rapidapi-host': 'youtube-music6.p.rapidapi.com'
+        }
+    };
+
+    try {
+        const response = await axios.request(options);
+        results = response.data;
+        currentResultIndex = 0;
+
+        const song = results[currentResultIndex];
+        const { title, views, duration, thumbnails } = song;
+        const { ArtistNames } = getSongInfo(song);
+        const thumbnailUrl = thumbnails.length > 0 ? thumbnails[0].url : '';
+
+        const caption = `*Title:* ${title}\n*Views:* ${views}\n*Duration:* ${duration}\n*Artist:* ${ArtistNames}`;
+
+        await bot.sendPhoto(chatId, thumbnailUrl, {
+            caption: caption,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "🎧 Listen Music", url: `https://www.youtube.com/watch?v=${song.videoId}` }],
+                    [{ text: "📥 Download Song", callback_data: `download_song:${currentResultIndex}` }],
+                    [{ text: "📄 Get Lyrics", callback_data: `get_lyrics:${currentResultIndex}` }],
+                    [
+                        { text: "⏮️ Previous", callback_data: 'previous' },
+                        { text: "Next ⏭️", callback_data: 'next' }
+                    ]
+                ]
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching data from YouTube Music API:', error.message);
+        bot.sendMessage(chatId, "Failed to fetch song details. Please try again.");
+    }
+});
+
+// Handle callback queries
+bot.on('callback_query', async (callbackQuery) => {
+    const { data, message } = callbackQuery;
+    const chatId = message.chat.id;
+    const messageId = message.message_id;
+
+    if (data === 'next') {
+        currentResultIndex++;
+        updateSongDetails(chatId, messageId, currentResultIndex);
+    } else if (data === 'previous') {
+        currentResultIndex = Math.max(currentResultIndex - 1, 0);
+        updateSongDetails(chatId, messageId, currentResultIndex);
+    } else if (data.startsWith('download_song:')) {
+        const index = parseInt(data.split(':')[1], 10);
+        const song = results[index];
+        const { title } = getSongInfo(song);
+
+        const downloadingMessage = await bot.sendMessage(chatId, "*⬇️ Downloading your song...*", {parse_mode: "Markdown"});
+
+        const downloadOptions = {
+            method: 'GET',
+            url: 'https://youtube-mp3-downloader2.p.rapidapi.com/ytmp3/ytmp3/',
+            params: { url: `https://www.youtube.com/watch?v=${song.videoId}` },
+            headers: {
+                'x-rapidapi-key': 'b6fa6e167emsh999865817f23a74p1eaf45jsnb17a89660952',
+                'x-rapidapi-host': 'youtube-mp3-downloader2.p.rapidapi.com'
+            }
+        };
+
+        try {
+            const downloadResponse = await axios.request(downloadOptions);
+            const downloadLink = downloadResponse.data.dlink;
+
+            // Edit message to "Uploading..."
+            await bot.editMessageText("*⬆️ Uploading your song...*", {
+                chat_id: chatId,
+                message_id: downloadingMessage.message_id,
+                parse_mode: "Markdown"
+            });
+
+            // Send the document
+            await bot.sendDocument(chatId, downloadLink, {
+                caption: `*🎵 Here is your song: ${title}*`,
+                filename: `${title}.mp3`,
+                parse_mode: "Markdown"
+            });
+
+            // Delete the "Uploading..." message
+            await bot.deleteMessage(chatId, downloadingMessage.message_id);
+
+        } catch (error) {
+            console.error('Error downloading the song:', error.message);
+            bot.sendMessage(chatId, "Failed to download the song. Please try again.");
+        }
+    } else if (data.startsWith('get_lyrics:')) {
+        const index = parseInt(data.split(':')[1], 10);
+        const song = results[index];
+        const { title, firstArtistName } = getSongInfo(song);
+
+        const lyrics = await getLyrics(title, firstArtistName);
+        bot.sendMessage(chatId, `<b>Lyrics for "${title}" by ${firstArtistName}:</b>\n\n${lyrics}`, { parse_mode: 'HTML' });
+    }
+
+    // Acknowledge the callback query
+    bot.answerCallbackQuery(callbackQuery.id);
+});
+
 
 console.log("Bot is running...");
