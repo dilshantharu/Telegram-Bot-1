@@ -1233,4 +1233,69 @@ bot.onText(/\/ss(?:\s+(.+))?/, async (msg, match) => {
     }
 });
 
+// -------------------------------/shorten Command------------------------------
+
+// TinyURL API key
+const TINYURL_API_KEY = 'PY02zzyXn5HeR3mu0Qko9RUXTJWvtC0J7og2xCZqEAElerFT9IWyER1Kl8F1';
+
+// List of adult site keywords to filter
+const adultKeywords = [
+    'porn', 'adult', 'sex', 'xxx', 'nude', 'erotic', 'hookup', 'escort', 'sexylinks'
+];
+
+// Function to check if a URL contains adult content
+const isAdultSite = (url) => {
+    return adultKeywords.some(keyword => url.toLowerCase().includes(keyword));
+};
+
+// Handle /shorten command
+bot.onText(/\/shorten(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const urlToShorten = match[1] ? match[1].trim() : null; // Get the URL from user input
+
+    // If no URL was provided
+    if (!urlToShorten) {
+        return bot.sendMessage(chatId, `⚠️ Please provide a URL to shorten.\nUsage: */shorten <URL>*\nExample: /shorten https://example.com`, { parse_mode: "Markdown" });
+    }
+
+    // Check if the URL is an adult site
+    if (isAdultSite(urlToShorten)) {
+        return bot.sendMessage(chatId, '*⚠️ Warning:* Adult site links are not allowed. Please refrain from using such links.', { parse_mode: "Markdown" });
+    }
+
+    // Send a message to indicate processing
+    const processingMessage = await bot.sendMessage(chatId, `*🔄 Shortening the URL, please wait...*`, { parse_mode: "Markdown" });
+
+    try {
+        // TinyURL API request to shorten the URL
+        const response = await axios({
+            method: 'POST',
+            url: `https://api.tinyurl.com/create`,
+            headers: {
+                'Authorization': `Bearer ${TINYURL_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            data: {
+                url: urlToShorten,
+                domain: 'tinyurl.com'
+            }
+        });
+
+        // Get the shortened URL from the response
+        const shortenedUrl = response.data.data.tiny_url;
+
+        // Send the shortened URL to the user
+        await bot.sendMessage(chatId, `✅ *Shortened URL:* ${shortenedUrl}`, { parse_mode: "Markdown" });
+
+        // Delete the "Shortening the URL" message
+        await bot.deleteMessage(chatId, processingMessage.message_id);
+    } catch (error) {
+        console.error('Error shortening URL:', error);
+        bot.sendMessage(chatId, '❌ Failed to shorten the URL. Please try again later.');
+
+        // Delete the "Shortening the URL" message in case of an error
+        await bot.deleteMessage(chatId, processingMessage.message_id);
+    }
+});
+
 console.log("Bot is running...");
