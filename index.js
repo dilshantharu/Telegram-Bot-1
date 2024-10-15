@@ -453,7 +453,7 @@ bot.on('callback_query', (callbackQuery) => {
 // -------------------------------/ehi Command------------------------------
 
 
-const ehiImagePath = 'https://iili.io/29ntynj.md.jpg'; // Update this with your image URL
+const ehiImagePath = 'https://i.ibb.co/XZ1ts8w/file-2.jpg'; // Update this with your image URL
 const channelMessageLink = 'https://t.me/your_channel_link'; // Update with your channel link
 
 // Command to handle /ehi
@@ -1325,16 +1325,6 @@ bot.onText(/\/ss(?:\s+(.+))?/, async (msg, match) => {
 
 // TinyURL API key
 const TINYURL_API_KEY = 'PY02zzyXn5HeR3mu0Qko9RUXTJWvtC0J7og2xCZqEAElerFT9IWyER1Kl8F1';
-
-// List of adult site keywords to filter
-const adultKeywords = [
-    'porn', 'adult', 'sex', 'xxx', 'nude', 'erotic', 'hookup', 'escort', 'sexylinks'
-];
-
-// Function to check if a URL contains adult content
-const isAdultSite = (url) => {
-    return adultKeywords.some(keyword => url.toLowerCase().includes(keyword));
-};
 
 // Handle /shorten command
 bot.onText(/\/shorten(?:\s+(.+))?/, async (msg, match) => {
