@@ -64,7 +64,47 @@ bot.on('callback_query', (callbackQuery) => {
   const action = callbackQuery.data;
 
   if (action === 'help') {
-    bot.sendMessage(chatId, 'ℹ️ Here is how you can use the bot: ...');
+    const helpMessage = `
+*🤖 Bot Commands Guide:*
+
+1. 🌟 */start* - Start the bot and get a welcome message.
+
+2. ℹ️ */about* - Get information about this bot.
+
+3. 📰 */news <topic>* - Get the latest news about the specified topic.
+   _Example:_ /news technology
+
+4. 📝 */quote* - Get a random inspirational quote.
+
+5. ⛅ */weather <city>* - Get the current weather for a specified city.
+   _Example:_ /weather New York
+
+6. 📈 */stock <symbol>* - Get the latest stock information for a specified stock symbol.
+   _Example:_ /stock AAPL
+
+7. 📸 */insta <URL>* - Download Instagram photos or videos from the provided link.
+   _Example:_ /insta https://instagram.com/p/xyz
+
+8. 🎵 */song <name>* - Search for a song by name and get options to download or view lyrics.
+   _Example:_ /song Shape of You
+
+9. 🖼️ */image* - Image-related functionalities:
+   - *imgbb* - Upload an image to imgbb and get the URL.
+   - *removebg* - Remove the background from an image.
+
+10. 📡 */ehi* - Get or upload EHI configuration files for HTTP Injector.
+
+11. 📸 */ss <URL>* - Take a screenshot of the specified website.
+   _Example:_ /ss https://example.com
+
+12. 🔗 */shorten <URL>* - Shorten the provided URL using TinyURL.
+   _Example:_ /shorten https://example.com
+
+*Note:* Adult site links are not allowed in the bot commands. Please refrain from using such links.
+    `;
+
+    // Send the help message
+    bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
   } else if (action === 'about') {
     const aboutMessage = `<b>About BotfyX</b> 🤖\n\n` +
       `BotfyX is your intelligent assistant designed to enhance your experience and streamline your tasks. ` +
@@ -120,6 +160,54 @@ bot.onText(/\/about/, (msg) => {
     
     }) ;
 });
+
+// -------------------------------/help Command------------------------------
+
+bot.onText(/\/help/, (msg) => {
+    const chatId = msg.chat.id;
+    const helpMessage = `
+*🤖 Bot Commands Guide:*
+
+1. 🌟 */start* - Start the bot and get a welcome message.
+
+2. ℹ️ */about* - Get information about this bot.
+
+3. 📰 */news <topic>* - Get the latest news about the specified topic.
+   _Example:_ /news technology
+
+4. 📝 */quote* - Get a random inspirational quote.
+
+5. ⛅ */weather <city>* - Get the current weather for a specified city.
+   _Example:_ /weather New York
+
+6. 📈 */stock <symbol>* - Get the latest stock information for a specified stock symbol.
+   _Example:_ /stock AAPL
+
+7. 📸 */insta <URL>* - Download Instagram photos or videos from the provided link.
+   _Example:_ /insta https://instagram.com/p/xyz
+
+8. 🎵 */song <name>* - Search for a song by name and get options to download or view lyrics.
+   _Example:_ /song Shape of You
+
+9. 🖼️ */image* - Image-related functionalities:
+   - *imgbb* - Upload an image to imgbb and get the URL.
+   - *removebg* - Remove the background from an image.
+
+10. 📡 */ehi* - Get or upload EHI configuration files for HTTP Injector.
+
+11. 📸 */ss <URL>* - Take a screenshot of the specified website.
+   _Example:_ /ss https://example.com
+
+12. 🔗 */shorten <URL>* - Shorten the provided URL using TinyURL.
+   _Example:_ /shorten https://example.com
+
+*Note:* Adult site links are not allowed in the bot commands. Please refrain from using such links.
+    `;
+
+    // Send the help message
+    bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
+});
+           
 
 // -------------------------------/weather Command------------------------------
 
