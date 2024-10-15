@@ -1184,5 +1184,53 @@ bot.on('callback_query', async (callbackQuery) => {
     bot.answerCallbackQuery(callbackQuery.id);
 });
 
+// -------------------------------/ss Command------------------------------
+
+// Define a list of adult site keywords to filter
+const adultKeywords = [
+    'porn', 'adult', 'sex', 'xxx', 'nude', 'erotic', 'hookup', 'escort', 'sexylinks'
+];
+
+// Function to check if a URL contains adult content
+const isAdultSite = (url) => {
+    return adultKeywords.some(keyword => url.toLowerCase().includes(keyword));
+};
+
+// Handle /ss command with optional URL
+bot.onText(/\/ss(?:\s+(.+))?/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    const url = match[1] ? match[1].trim() : null; // Get the URL from user input, if provided
+
+    // If no URL was provided
+    if (!url) {
+        return bot.sendMessage(chatId, `⚠️ Please provide a link.\nUsage: */ss <link>*\nExample: https://google.com.\n*Do not add adult site links.*`, { disable_web_page_preview: true, parse_mode: "Markdown" });
+    }
+
+    // Check if the URL is an adult site
+    if (isAdultSite(url)) {
+        return bot.sendMessage(chatId, '*⚠️ Warning:* Adult site links are not allowed. Please refrain from using such links.', { parse_mode: "Markdown", disable_web_page_preview: true });
+    }
+
+    // Send a message to indicate processing
+    const waitingMessage = await bot.sendMessage(chatId, `*🔄 Generating screenshot, please wait...*`, { disable_web_page_preview: true, parse_mode: "Markdown" });
+
+    try {
+        // Screenshot API request
+        const response = await axios({
+            method: 'GET',
+            url: `https://api.screenshotone.com/take?access_key=EGTdXJ7SxwVlXw&url=${encodeURIComponent(url)}&viewport_width=1920&viewport_height=1080&device_scale_factor=1&image_quality=80&format=jpg&block_ads=true&block_cookie_banners=true&full_page=false&block_trackers=true&block_banners_by_heuristics=false&delay=0&timeout=60`,
+            responseType: 'arraybuffer' // To handle image data
+        });
+
+        // Send the screenshot as a photo
+        await bot.sendPhoto(chatId, Buffer.from(response.data), { caption: `*✅ Here is the screenshot of ${url}*`, parse_mode: "Markdown" });
+
+        // Delete the waiting message
+        await bot.deleteMessage(chatId, waitingMessage.message_id);
+    } catch (error) {
+        console.error(error);
+        bot.sendMessage(chatId, 'Failed to generate screenshot. Please try again later.', { disable_web_page_preview: true });
+    }
+});
 
 console.log("Bot is running...");
