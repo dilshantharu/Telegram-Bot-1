@@ -312,8 +312,8 @@ function sendNewsArticle(chatId, index) {
     const article = newsData[chatId].articles[index];
     const buttons = [
         [
-            { text: '⬅️ Previous', callback_data: 'previous' },
-            { text: 'Next ➡️', callback_data: 'next' }
+            { text: '⬅️ Previous', callback_data: 'previous_news' },
+            { text: 'Next ➡️', callback_data: 'next_news' }
         ]
     ];
 
@@ -344,12 +344,12 @@ bot.on('callback_query', (callbackQuery) => {
     const action = callbackQuery.data;
 
     // Check if the action is for news navigation
-    if (action === 'next' || action === 'previous') {
+    if (action === 'next_news' || action === 'previous_news') {
         let index = newsData[chatId].index;
 
-        if (action === 'next') {
+        if (action === 'next_news') {
             index = (index + 1) % newsData[chatId].articles.length; // Loop to the start if at the end
-        } else if (action === 'previous') {
+        } else if (action === 'previous_news') {
             index = (index - 1 + newsData[chatId].articles.length) % newsData[chatId].articles.length; // Loop to the end if at the start
         }
 
@@ -1054,8 +1054,8 @@ async function updateSongDetails(chatId, messageId, resultIndex) {
                 [{ text: "📥 Download Song", callback_data: `download_song:${resultIndex}` }],
                 [{ text: "📄 Get Lyrics", callback_data: `get_lyrics:${resultIndex}` }],
                 [
-                    { text: "⏮️ Previous", callback_data: 'previous' },
-                    { text: "Next ⏭️", callback_data: 'next' }
+                    { text: "⏮️ Previous", callback_data: 'previous_song' },
+                    { text: "Next ⏭️", callback_data: 'next_song' }
                 ]
             ]
         }
@@ -1104,8 +1104,8 @@ bot.onText(/\/song(?:\s+(.+))?/, async (msg, match) => {
                     [{ text: "📥 Download Song", callback_data: `download_song:${currentResultIndex}` }],
                     [{ text: "📄 Get Lyrics", callback_data: `get_lyrics:${currentResultIndex}` }],
                     [
-                        { text: "⏮️ Previous", callback_data: 'previous' },
-                        { text: "Next ⏭️", callback_data: 'next' }
+                        { text: "⏮️ Previous", callback_data: 'previous_song' },
+                        { text: "Next ⏭️", callback_data: 'next_song' }
                     ]
                 ]
             }
@@ -1123,10 +1123,10 @@ bot.on('callback_query', async (callbackQuery) => {
     const chatId = message.chat.id;
     const messageId = message.message_id;
 
-    if (data === 'next') {
+    if (data === 'next_song') {
         currentResultIndex++;
         updateSongDetails(chatId, messageId, currentResultIndex);
-    } else if (data === 'previous') {
+    } else if (data === 'previous_song') {
         currentResultIndex = Math.max(currentResultIndex - 1, 0);
         updateSongDetails(chatId, messageId, currentResultIndex);
     } else if (data.startsWith('download_song:')) {
